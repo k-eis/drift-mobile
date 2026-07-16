@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Structural Drift Instrument — k-eis</title>
+<style>
+@font-face {
+  font-family: 'system-mono';
+  src: local('SF Mono'), local('Menlo'), local('Consolas');
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg: #f4f3ef;
+  --ink: #16150f;
+  --line: #d8d5cc;
+  --line-strong: #b8b4a8;
+  --accent: #b8391f;
+  --mono: 'Courier New', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  min-height: 100vh;
+}
+
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+}
+
+/* ── ヘッダー ── */
+header {
+  border-bottom: 1px solid var(--line-strong);
+  padding-bottom: 22px;
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.filter-tag {
+  font: 600 10px/1 var(--mono);
+  color: var(--accent);
+  letter-spacing: 0.16em;
+  margin-bottom: 10px;
+}
+h1 {
+  font: 300 32px/1.1 var(--sans);
+  letter-spacing: -0.01em;
+}
+h1 .jp {
+  font-size: 15px;
+  color: #77746a;
+  font-weight: 400;
+  margin-left: 10px;
+}
+.tagline {
+  font: 400 12px/1.6 var(--sans);
+  color: #77746a;
+  margin-top: 6px;
+}
+.version {
+  font: 400 9px/1 var(--mono);
+  color: #a8a498;
+  letter-spacing: 0.1em;
+  text-align: right;
+}
+
+/* ── メインレイアウト ── */
+.stage {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 0;
+  border: 1px solid var(--line-strong);
+}
+
+.canvas-area {
+  position: relative;
+  background:
+    linear-gradient(45deg, #eae7de 25%, transparent 25%),
+    linear-gradient(-45deg, #eae7de 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eae7de 75%),
+    linear-gradient(-45deg, transparent 75%, #eae7de 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+  border-right: 1px solid var(--line-strong);
+  min-height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#dropZone {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+#dropZone.drag-over {
+  background: rgba(184,57,31,0.06);
+}
+#dropZone .icon {
+  width: 40px; height: 40px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 2px;
+  position: relative;
+}
+#dropZone .icon::before {
+  content: '';
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 16px; height: 16px;
+  border-left: 1.5px solid var(--line-strong);
+  border-bottom: 1.5px solid var(--line-strong);
+  transform: translate(-50%,-65%) rotate(45deg);
+}
+#dropZone .label-main {
+  font: 500 12px/1 var(--sans);
+  color: #55524a;
+}
+#dropZone .label-sub {
+  font: 400 9px/1 var(--mono);
+  color: #a8a498;
+  letter-spacing: 0.08em;
+}
+#fileInput { display: none; }
+
+canvas#outputCanvas {
+  max-width: 100%;
+  max-height: 640px;
+  display: none;
+}
+
+.canvas-badge {
+  position: absolute;
+  top: 14px; left: 14px;
+  font: 500 9px/1 var(--mono);
+  color: #77746a;
+  background: rgba(244,243,239,0.9);
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  letter-spacing: 0.08em;
+  display: none;
+}
+
+/* ── コントロールパネル ── */
+.controls {
+  background: var(--bg);
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.ctrl-group {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ctrl-group:first-child { padding-top: 0; }
+.ctrl-group:last-of-type { border-bottom: none; }
+
+.ctrl-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+.ctrl-label .name {
+  font: 500 10px/1 var(--sans);
+  color: #55524a;
+  letter-spacing: 0.02em;
+}
+.ctrl-label .name .jp-small {
+  font-size: 9px;
+  color: #a8a498;
+  margin-left: 4px;
+}
+.ctrl-label .val {
+  font: 500 10px/1 var(--mono);
+  color: var(--accent);
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 2px;
+  background: var(--line-strong);
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  background: var(--ink);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+input[type="range"]::-webkit-slider-thumb:hover { background: var(--accent); }
+input[type="range"]::-moz-range-thumb {
+  width: 12px; height: 12px;
+  background: var(--ink);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
+select.direction-select {
+  width: 100%;
+  font: 500 11px/1 var(--sans);
+  color: var(--ink);
+  background: white;
+  border: 1px solid var(--line-strong);
+  padding: 8px 10px;
+  cursor: pointer;
+  border-radius: 1px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.checkbox-row input {
+  width: 13px; height: 13px;
+  accent-color: var(--ink);
+  cursor: pointer;
+}
+.checkbox-row label {
+  font: 500 10px/1 var(--sans);
+  color: #55524a;
+  cursor: pointer;
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  margin-top: 4px;
+}
+.preset-btn {
+  font: 500 8.5px/1 var(--mono);
+  padding: 7px 2px;
+  border: 1px solid var(--line-strong);
+  background: white;
+  color: #77746a;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.12s;
+}
+.preset-btn:hover { border-color: var(--ink); color: var(--ink); }
+.preset-btn.active { background: var(--ink); border-color: var(--ink); color: white; }
+
+.profile-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 4px;
+}
+.profile-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 9px 11px;
+  border: 1px solid var(--line-strong);
+  background: white;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.profile-btn:hover { border-color: var(--ink); }
+.profile-btn.active { background: var(--ink); border-color: var(--ink); }
+.profile-btn.active .profile-name { color: white; }
+.profile-btn.active .profile-desc { color: #b8b4a8; }
+.profile-name {
+  font: 600 11px/1 var(--sans);
+  color: var(--ink);
+}
+.profile-desc {
+  font: 400 8.5px/1 var(--sans);
+  color: #a8a498;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+.btn {
+  font: 600 10.5px/1 var(--sans);
+  letter-spacing: 0.04em;
+  padding: 12px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: white;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.12s;
+}
+.btn:hover { background: var(--accent); border-color: var(--accent); }
+.btn.secondary {
+  background: transparent;
+  color: var(--ink);
+}
+.btn.secondary:hover { background: rgba(0,0,0,0.04); color: var(--ink); border-color: var(--ink); }
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: var(--line-strong);
+  border-color: var(--line-strong);
+}
+.btn:disabled:hover { background: var(--line-strong); border-color: var(--line-strong); }
+
+@media (max-width: 860px) {
+  .wrap { padding: 20px 16px 50px; }
+
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+  h1 { font-size: 24px; }
+  h1 .jp { display: block; margin-left: 0; margin-top: 4px; font-size: 13px; }
+  .tagline { font-size: 11px; }
+  .version { text-align: left; }
+
+  .stage {
+    grid-template-columns: 1fr;
+    border: none;
+  }
+
+  .canvas-area {
+    border: 1px solid var(--line-strong);
+    border-bottom: none;
+    min-height: 300px;
+  }
+  #dropZone .label-main { font-size: 13px; text-align: center; padding: 0 16px; }
+  canvas#outputCanvas { max-height: 60vh; }
+
+  .controls {
+    border: 1px solid var(--line-strong);
+    border-top: none;
+    padding: 18px 16px;
+  }
+
+  .ctrl-group { padding: 18px 0; }
+
+  /* タッチ操作しやすいよう、スライダーのつまみとトラックを拡大 */
+  input[type="range"] {
+    height: 4px;
+    margin: 8px 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    width: 22px; height: 22px;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 22px; height: 22px;
+  }
+
+  .ctrl-label .name { font-size: 11.5px; }
+  .ctrl-label .val { font-size: 12px; }
+
+  select.direction-select {
+    padding: 12px 10px;
+    font-size: 13px;
+  }
+
+  .checkbox-row {
+    padding: 4px 0;
+  }
+  .checkbox-row input {
+    width: 18px; height: 18px;
+  }
+  .checkbox-row label { font-size: 12px; }
+
+  /* Drift Profileボタンをタップしやすく */
+  .profile-btn {
+    padding: 13px 14px;
+  }
+  .profile-name { font-size: 13px; }
+  .profile-desc { font-size: 9.5px; }
+
+  /* アクションボタンを大きく */
+  .btn {
+    padding: 16px;
+    font-size: 12px;
+  }
+
+  .action-buttons { gap: 10px; margin-top: 8px; }
+}
+
+@media (max-width: 420px) {
+  h1 { font-size: 21px; }
+  .canvas-badge { font-size: 8px; padding: 3px 6px; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="filter-tag">INSTRUMENT 001</div>
+      <h1>Structural Drift <span class="jp">構造ドリフト</span></h1>
+      <div class="tagline">We do not break the structure. We translate it into time.</div>
+      <div class="tagline" style="margin-top:2px; color:#a8a498;">法則を、あなたが調律する楽器。</div>
+    </div>
+    <div class="version">k-eis DESIGN FILTER<br>v1.0</div>
+  </header>
+
+  <div class="stage">
+    <div class="canvas-area">
+      <div id="dropZone">
+        <div class="icon"></div>
+        <div class="label-main">画像をドロップ、またはクリックして選択</div>
+        <div class="label-sub">PNG / JPEG SUPPORTED</div>
+        <input type="file" id="fileInput" accept="image/*">
+      </div>
+      <div class="canvas-badge" id="canvasBadge">PREVIEW</div>
+      <canvas id="outputCanvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <div class="ctrl-group">
+        <div class="ctrl-label">
+          <span class="name">INTENSITY <span class="jp-small">強度</span></span>
+          <span class="val" id="intensityVal">40%</span>
+        </div>
+        <input type="range" id="intensity" min="0" max="100" value="40">
+      </div>
+
+      <div class="ctrl-group">
+        <div class="ctrl-label">
+          <span class="name">TIME <span class="jp-small">時間の翻訳</span></span>
+          <span class="val" id="timeVal">40ms</span>
+        </div>
+        <input type="range" id="time" min="0" max="80" value="40" step="1">
+        <div style="display:flex; justify-content:space-between; margin-top:5px;">
+          <span style="font:400 8px var(--mono); color:#c4c0b4;">0ms</span>
+          <span style="font:400 8px var(--mono); color:#c4c0b4;">80ms</span>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <div class="ctrl-label">
+          <span class="name">SPACING <span class="jp-small">間隔</span></span>
+          <span class="val" id="spacingVal">4px</span>
+        </div>
+        <input type="range" id="spacing" min="2" max="16" value="4">
+      </div>
+
+      <div class="ctrl-group">
+        <div class="ctrl-label">
+          <span class="name">PRESERVE LINES <span class="jp-small">保持率</span></span>
+          <span class="val" id="preserveVal">25%</span>
+        </div>
+        <input type="range" id="preserve" min="0" max="80" value="25">
+      </div>
+
+      <div class="ctrl-group">
+        <div class="ctrl-label">
+          <span class="name">DIRECTION <span class="jp-small">方向</span></span>
+        </div>
+        <select class="direction-select" id="direction">
+          <option value="right" selected>水平 → 右方向</option>
+          <option value="left">水平 → 左方向</option>
+          <option value="both">水平 → 両方向</option>
+        </select>
+      </div>
+
+      <div class="ctrl-group">
+        <div class="checkbox-row">
+          <input type="checkbox" id="monochrome">
+          <label for="monochrome">MONOCHROME <span style="color:#a8a498;font-weight:400;">/ モノクロ変換</span></label>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <div class="ctrl-label"><span class="name">DRIFT PROFILE <span class="jp-small">状態を選ぶ</span></span></div>
+        <div class="profile-grid">
+          <div class="profile-btn" data-profile="quiet">
+            <span class="profile-name">Quiet</span>
+            <span class="profile-desc">余白多い・線短い</span>
+          </div>
+          <div class="profile-btn active" data-profile="flow">
+            <span class="profile-name">Flow</span>
+            <span class="profile-desc">標準的な流れ</span>
+          </div>
+          <div class="profile-btn" data-profile="memory">
+            <span class="profile-name">Memory</span>
+            <span class="profile-desc">淡く長い残像</span>
+          </div>
+          <div class="profile-btn" data-profile="collapse">
+            <span class="profile-name">Collapse</span>
+            <span class="profile-desc">輪郭ごと崩れる</span>
+          </div>
+          <div class="profile-btn" data-profile="ghost">
+            <span class="profile-name">Ghost</span>
+            <span class="profile-desc">極限まで希薄</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctrl-group" style="border-bottom:none;">
+        <div class="action-buttons">
+          <button class="btn" id="downloadBtn" disabled>PNGとして保存</button>
+          <button class="btn secondary" id="resetBtn" disabled>画像をリセット</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="drift.js"></script>
+</body>
+</html>
