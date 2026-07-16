@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Structural Drift Instrument — k-eis</title>
+<title>Structural Drift — Visual Synth — k-eis</title>
 <style>
 @font-face {
   font-family: 'system-mono';
@@ -18,8 +18,59 @@
   --line: #d8d5cc;
   --line-strong: #b8b4a8;
   --accent: #b8391f;
+  --canvas-check-a: #eae7de;
+  --canvas-check-b: #f4f3ef;
   --mono: 'Courier New', monospace;
   --sans: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ── THEME 02: NORDIC / 北欧風 ── */
+body.theme-nordic {
+  --bg: #fafaf9;
+  --ink: #2b2b28;
+  --line: #e2e2df;
+  --line-strong: #c9c9c4;
+  --accent: #7a8471;
+  --canvas-check-a: #f0f0ee;
+  --canvas-check-b: #fafaf9;
+  --sans: 'Helvetica Neue', 'Segoe UI', Arial, sans-serif;
+}
+
+/* ── THEME 03: TR-808 / 80年代ローランド風 ── */
+body.theme-808 {
+  --bg: #0e0c08;
+  --ink: #f0d8b0;
+  --line: #3a2f1e;
+  --line-strong: #5a4426;
+  --accent: #e8542a;
+  --canvas-check-a: #1a1510;
+  --canvas-check-b: #14100c;
+  --mono: 'Courier New', monospace;
+  --sans: 'Courier New', monospace;
+}
+
+/* ── THEME 04: KUMAGAI / 熊谷守一風 ── */
+body.theme-kumagai {
+  --bg: #e8dcc4;
+  --ink: #2a2320;
+  --line: #c4b28e;
+  --line-strong: #9c8560;
+  --accent: #b8501f;
+  --canvas-check-a: #ddd0b0;
+  --canvas-check-b: #e8dcc4;
+  --sans: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+}
+
+/* ── THEME 05: MONOCHROME PHOTO / モノクロ写真風 ── */
+body.theme-mono {
+  --bg: #ececec;
+  --ink: #1c1c1c;
+  --line: #c8c8c8;
+  --line-strong: #a0a0a0;
+  --accent: #4a4a4a;
+  --canvas-check-a: #e0e0e0;
+  --canvas-check-b: #ececec;
+  --sans: -apple-system, 'Helvetica Neue', Arial, sans-serif;
 }
 
 html, body {
@@ -72,6 +123,52 @@ h1 .jp {
   text-align: right;
 }
 
+/* ── テーマ切り替え ── */
+.theme-switcher {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.theme-label {
+  font: 500 9px/1 var(--mono);
+  color: #a8a498;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+.theme-options {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.theme-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid var(--line-strong);
+  background: white;
+  font: 500 9.5px/1 var(--sans);
+  color: #55524a;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.theme-btn:hover { border-color: var(--ink); }
+.theme-btn.active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: white;
+}
+.theme-btn .swatch {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
 /* ── メインレイアウト ── */
 .stage {
   display: grid;
@@ -83,10 +180,11 @@ h1 .jp {
 .canvas-area {
   position: relative;
   background:
-    linear-gradient(45deg, #eae7de 25%, transparent 25%),
-    linear-gradient(-45deg, #eae7de 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #eae7de 75%),
-    linear-gradient(-45deg, transparent 75%, #eae7de 75%);
+    linear-gradient(45deg, var(--canvas-check-a) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--canvas-check-a) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--canvas-check-a) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--canvas-check-a) 75%);
+  background-color: var(--canvas-check-b);
   background-size: 16px 16px;
   background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
   border-right: 1px solid var(--line-strong);
@@ -347,10 +445,14 @@ select.direction-select {
   .canvas-area {
     border: 1px solid var(--line-strong);
     border-bottom: none;
-    min-height: 300px;
+    min-height: 220px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--bg);
   }
   #dropZone .label-main { font-size: 13px; text-align: center; padding: 0 16px; }
-  canvas#outputCanvas { max-height: 60vh; }
+  canvas#outputCanvas { max-height: 42vh; }
 
   .controls {
     border: 1px solid var(--line-strong);
@@ -415,19 +517,45 @@ select.direction-select {
 <div class="wrap">
   <header>
     <div>
-      <div class="filter-tag">INSTRUMENT 001</div>
+      <div class="filter-tag">VISUAL SYNTH 001</div>
       <h1>Structural Drift <span class="jp">構造ドリフト</span></h1>
       <div class="tagline">We do not break the structure. We translate it into time.</div>
-      <div class="tagline" style="margin-top:2px; color:#a8a498;">法則を、あなたが調律する楽器。</div>
+      <div class="tagline" style="margin-top:2px; color:#a8a498;">Visual Synth — 視覚のシンセサイザー。</div>
     </div>
     <div class="version">k-eis DESIGN FILTER<br>v1.0</div>
   </header>
+
+  <div class="theme-switcher">
+    <span class="theme-label">THEME <span class="jp-small">着せ替え</span></span>
+    <div class="theme-options">
+      <button class="theme-btn active" data-theme="default">
+        <span class="swatch" style="background:#f4f3ef; border:1px solid #d8d5cc;"></span>
+        Standard
+      </button>
+      <button class="theme-btn" data-theme="nordic">
+        <span class="swatch" style="background:#fafaf9; border:1px solid #c9c9c4;"></span>
+        Nordic
+      </button>
+      <button class="theme-btn" data-theme="808">
+        <span class="swatch" style="background:#0e0c08; border:1px solid #e8542a;"></span>
+        TR-808
+      </button>
+      <button class="theme-btn" data-theme="kumagai">
+        <span class="swatch" style="background:#e8dcc4; border:1px solid #b8501f;"></span>
+        Kumagai
+      </button>
+      <button class="theme-btn" data-theme="mono">
+        <span class="swatch" style="background:#ececec; border:1px solid #4a4a4a;"></span>
+        Mono Photo
+      </button>
+    </div>
+  </div>
 
   <div class="stage">
     <div class="canvas-area">
       <div id="dropZone">
         <div class="icon"></div>
-        <div class="label-main">画像をドロップ、またはクリックして選択</div>
+        <div class="label-main">Drop image, or click to select<br><span style="font-size:10px; color:#a8a498;">画像をドロップ、またはクリックして選択</span></div>
         <div class="label-sub">PNG / JPEG SUPPORTED</div>
         <input type="file" id="fileInput" accept="image/*">
       </div>
@@ -477,9 +605,9 @@ select.direction-select {
           <span class="name">DIRECTION <span class="jp-small">方向</span></span>
         </div>
         <select class="direction-select" id="direction">
-          <option value="right" selected>水平 → 右方向</option>
-          <option value="left">水平 → 左方向</option>
-          <option value="both">水平 → 両方向</option>
+          <option value="right" selected>Right → 右方向</option>
+          <option value="left">Left → 左方向</option>
+          <option value="both">Both → 両方向</option>
         </select>
       </div>
 
@@ -518,8 +646,8 @@ select.direction-select {
 
       <div class="ctrl-group" style="border-bottom:none;">
         <div class="action-buttons">
-          <button class="btn" id="downloadBtn" disabled>PNGとして保存</button>
-          <button class="btn secondary" id="resetBtn" disabled>画像をリセット</button>
+          <button class="btn" id="downloadBtn" disabled>SAVE AS PNG</button>
+          <button class="btn secondary" id="resetBtn" disabled>RESET IMAGE</button>
         </div>
       </div>
     </div>
